@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - DeepFake Audio Detector</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/template/css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <i class="fas fa-shield-alt"></i>
+          <span>DeepFake Audio Detector</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/template/dashboard.html" class="nav-item" data-page="dashboard">
+          <i class="fas fa-chart-pie"></i> Dashboard
+        </a>
+        <a href="/template/history.html" class="nav-item" data-page="history">
+          <i class="fas fa-history"></i> History
+        </a>
+        <a href="/template/report.html" class="nav-item" data-page="report">
+          <i class="fas fa-file-alt"></i> Reports
+        </a>
+        <a href="/template/settings.html" class="nav-item active" data-page="settings">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="sidebar-avatar">U</div>
+          <div>
+            <div class="user-name" id="sidebar-username">User</div>
+            <div class="user-role">Forensic Analyst</div>
+          </div>
+        </div>
+        <button class="btn btn-danger" style="width:100%" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h2><i class="fas fa-cog"></i> Settings</h2>
+        <p>Manage your account and security preferences</p>
+      </div>
+
+      <div class="settings-grid">
+        <!-- Account Info -->
+        <div class="card settings-card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-user-circle"></i> Account Information</div>
+          </div>
+          <div class="card-body">
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Username</h4>
+                <p>Your login identifier</p>
+              </div>
+              <div id="settings-username" style="font-weight:600;color:var(--primary-light)">-</div>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Account Type</h4>
+                <p>Your account tier</p>
+              </div>
+              <div style="font-weight:600">Forensic Analyst</div>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Status</h4>
+                <p>Account status</p>
+              </div>
+              <div style="color:var(--success);font-weight:600"><i class="fas fa-check-circle"></i> Active</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security -->
+        <div class="card settings-card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-shield-alt"></i> Security</div>
+          </div>
+          <div class="card-body">
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Authentication</h4>
+                <p>JWT token-based authentication</p>
+              </div>
+              <div style="color:var(--success);font-weight:600"><i class="fas fa-lock"></i> Enabled</div>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Session</h4>
+                <p>Your current session status</p>
+              </div>
+              <div style="color:var(--success);font-weight:600"><i class="fas fa-check-circle"></i> Valid</div>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <h4>Logout</h4>
+                <p>End your session securely</p>
+              </div>
+              <button class="btn btn-danger" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- System Info -->
+      <div class="card" style="margin-top:20px">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-info-circle"></i> System Information</div>
+        </div>
+        <div class="card-body">
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Backend</h4>
+              <p>API server endpoint</p>
+            </div>
+            <div style="font-family:monospace;font-size:13px;color:var(--text-secondary)">http://127.0.0.1:8000</div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Model</h4>
+              <p>Deepfake detection architecture</p>
+            </div>
+            <div style="font-weight:600">CNN + BiLSTM</div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <h4>Supported Formats</h4>
+              <p>Audio file types accepted</p>
+            </div>
+            <div style="font-weight:600"><i class="fas fa-music"></i> WAV</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/template/js/app.js"></script>
+  <script>
+    if (!authGuard()) {
+      throw new Error('Authentication required');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      renderSidebarUser();
+      setActiveNav('settings');
+
+      var username = localStorage.getItem('username') || 'User';
+      document.getElementById('settings-username').textContent = username;
+      document.getElementById('sidebar-username').textContent = username;
+      document.getElementById('sidebar-avatar').textContent = username.charAt(0).toUpperCase();
+    });
+  </script>
+</body>
+</html>
+

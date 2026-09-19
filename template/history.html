@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>History - DeepFake Audio Detector</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/template/css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <i class="fas fa-shield-alt"></i>
+          <span>DeepFake Audio Detector</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/template/dashboard.html" class="nav-item" data-page="dashboard">
+          <i class="fas fa-chart-pie"></i> Dashboard
+        </a>
+        <a href="/template/history.html" class="nav-item active" data-page="history">
+          <i class="fas fa-history"></i> History
+        </a>
+        <a href="/template/report.html" class="nav-item" data-page="report">
+          <i class="fas fa-file-alt"></i> Reports
+        </a>
+        <a href="/template/settings.html" class="nav-item" data-page="settings">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="sidebar-avatar">U</div>
+          <div>
+            <div class="user-name" id="sidebar-username">User</div>
+            <div class="user-role">Forensic Analyst</div>
+          </div>
+        </div>
+        <button class="btn btn-danger" style="width:100%" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h2><i class="fas fa-history"></i> Analysis History</h2>
+        <p>View all your previous audio analyses</p>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-bar">
+        <input type="text" class="filter-input" id="search-input" placeholder="Search by audio name..." oninput="filterHistory()">
+        <select class="filter-select" id="filter-result" onchange="filterHistory()">
+          <option value="">All Results</option>
+          <option value="real">Authentic (Real)</option>
+          <option value="fake">Manipulated (Fake)</option>
+        </select>
+        <select class="filter-select" id="filter-date" onchange="filterHistory()">
+          <option value="">All Time</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Audio Name</th>
+                  <th>Result</th>
+                  <th>Confidence</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body">
+                <tr>
+                  <td colspan="5">
+                    <div class="empty-state">
+                      <i class="fas fa-spinner fa-spin"></i>
+                      <p>Loading history...</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Image Modal -->
+  <div id="image-modal" class="modal-overlay hidden" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modal-title">Visualization</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <img id="modal-image" src="" alt="Visualization">
+      </div>
+    </div>
+  </div>
+
+  <script src="/template/js/app.js"></script>
+  <script>
+    var allHistory = [];
+
+    if (!authGuard()) {
+      throw new Error('Authentication required');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      renderSidebarUser();
+      setActiveNav('history');
+      loadHistory();
+    });
+
+    async function loadHistory() {
+      try {
+        var response = await apiFetch('/history');
+        if (!response) return;
+        var data = await response.json();
+        if (!Array.isArray(data)) {
+          showTableEmpty('No history found');
+          return;
+        }
+        allHistory = data;
+        renderHistoryTable(allHistory);
+      } catch (e) {
+        console.error('History error:', e);
+        showTableEmpty('Failed to load history');
+      }
+    }
+
+    function renderHistoryTable(data) {
+      var tbody = document.getElementById('history-table-body');
+      if (!data || data.length === 0) {
+        showTableEmpty('No records found');
+        return;
+      }
+
+      var html = '';
+      data.forEach(function(item) {
+        var isFake = item.result && item.result.toUpperCase().includes('FAKE');
+        var badgeClass = isFake ? 'badge-fake' : 'badge-real';
+        var badgeIcon = isFake ? 'fa-exclamation-triangle' : 'fa-check-circle';
+        var badgeText = isFake ? 'Fake' : 'Real';
+        var confPercent = (parseFloat(item.confidence) * 100).toFixed(2) + '%';
+
+        var mfccUrl = item.mfcc_path ? (BASE_URL + '/' + item.mfcc_path) : '#';
+        var specUrl = item.spectrogram_path ? (BASE_URL + '/' + item.spectrogram_path) : '#';
+        var reportUrl = item.report_path ? (BASE_URL + '/' + item.report_path) : '#';
+
+        html += '<tr>';
+        html += '<td><i class="fas fa-music" style="color:var(--primary-light);margin-right:8px"></i>' + escapeHtml(item.audio_name || '-') + '</td>';
+        html += '<td><span class="badge ' + badgeClass + '"><i class="fas ' + badgeIcon + '"></i> ' + badgeText + '</span></td>';
+        html += '<td>' + confPercent + '</td>';
+        html += '<td>' + formatDate(item.created_at) + '</td>';
+        html += '<td>';
+        html += '<div class="action-btns">';
+
+        if (mfccUrl !== '#') {
+          html += '<button class="action-btn action-btn-view" onclick="openImageModal(\'' + escapeJs(mfccUrl) + '\', \'MFCC - ' + escapeJs(item.audio_name || '') + '\')">';
+          html += '<i class="fas fa-wave-square"></i> MFCC</button>';
+        }
+
+        if (specUrl !== '#') {
+          html += '<button class="action-btn action-btn-view" onclick="openImageModal(\'' + escapeJs(specUrl) + '\', \'Spectrogram - ' + escapeJs(item.audio_name || '') + '\')">';
+          html += '<i class="fas fa-music"></i> Spec</button>';
+        }
+
+        if (reportUrl !== '#') {
+          html += '<a href="' + reportUrl + '" class="action-btn action-btn-dl" target="_blank" download>';
+          html += '<i class="fas fa-download"></i> PDF</a>';
+          html += '<a href="/template/report.html?audio=' + encodeURIComponent(item.audio_name || '') + '&result=' + encodeURIComponent(item.result || '') + '&confidence=' + encodeURIComponent(item.confidence || '') + '&date=' + encodeURIComponent(item.created_at || '') + '&mfcc=' + encodeURIComponent(item.mfcc_path || '') + '&spec=' + encodeURIComponent(item.spectrogram_path || '') + '&report=' + encodeURIComponent(item.report_path || '') + '" class="action-btn action-btn-view">';
+          html += '<i class="fas fa-eye"></i> View</a>';
+        }
+
+        html += '</div>';
+        html += '</td>';
+        html += '</tr>';
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function showTableEmpty(message) {
+      document.getElementById('history-table-body').innerHTML =
+        '<tr><td colspan="5"><div class="empty-state"><i class="fas fa-inbox"></i><p>' + escapeHtml(message) + '</p></div></td></tr>';
+    }
+
+    function filterHistory() {
+      var search = document.getElementById('search-input').value.toLowerCase();
+      var resultFilter = document.getElementById('filter-result').value;
+      var dateFilter = document.getElementById('filter-date').value;
+
+      var filtered = allHistory.filter(function(item) {
+        var matchSearch = !search || (item.audio_name && item.audio_name.toLowerCase().includes(search));
+        var matchResult = !resultFilter || (
+          resultFilter === 'real' && item.result && item.result.toUpperCase().includes('REAL')
+        ) || (
+          resultFilter === 'fake' && item.result && item.result.toUpperCase().includes('FAKE')
+        );
+
+        var matchDate = true;
+        if (dateFilter && item.created_at) {
+          var itemDate = new Date(item.created_at);
+          var now = new Date();
+          if (dateFilter === 'today') {
+            matchDate = itemDate.toDateString() === now.toDateString();
+          } else if (dateFilter === 'week') {
+            var weekAgo = new Date();
+            weekAgo.setDate(now.getDate() - 7);
+            matchDate = itemDate >= weekAgo;
+          } else if (dateFilter === 'month') {
+            matchDate = itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
+          }
+        }
+
+        return matchSearch && matchResult && matchDate;
+      });
+
+      renderHistoryTable(filtered);
+    }
+
+    function openImageModal(src, title) {
+      document.getElementById('modal-image').src = src;
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('image-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('image-modal').classList.add('hidden');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      var div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function escapeJs(text) {
+      if (!text) return '';
+      return text.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+  </script>
+</body>
+</html>
+

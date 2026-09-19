@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - DeepFake Audio Detector</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/template/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <i class="fas fa-shield-alt"></i>
+          <span>DeepFake Audio Detector</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/template/dashboard.html" class="nav-item active" data-page="dashboard">
+          <i class="fas fa-chart-pie"></i> Dashboard
+        </a>
+        <a href="/template/history.html" class="nav-item" data-page="history">
+          <i class="fas fa-history"></i> History
+        </a>
+        <a href="/template/report.html" class="nav-item" data-page="report">
+          <i class="fas fa-file-alt"></i> Reports
+        </a>
+        <a href="/template/settings.html" class="nav-item" data-page="settings">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="sidebar-avatar">U</div>
+          <div>
+            <div class="user-name" id="sidebar-username">User</div>
+            <div class="user-role">Forensic Analyst</div>
+          </div>
+        </div>
+        <button class="btn btn-danger" style="width:100%" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h2><i class="fas fa-chart-pie"></i> Dashboard</h2>
+        <p>Upload and analyze audio files for deepfake detection</p>
+      </div>
+
+      <!-- Row 1: Stats -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue"><i class="fas fa-headphones"></i></div>
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">Total Audios</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-value" id="stat-real">0</div>
+          <div class="stat-label">Real Count</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="stat-value" id="stat-fake">0</div>
+          <div class="stat-label">Fake Count</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange"><i class="fas fa-percentage"></i></div>
+          <div class="stat-value" id="stat-confidence">0%</div>
+          <div class="stat-label">Avg Confidence</div>
+        </div>
+      </div>
+
+      <!-- Row 2: Upload + Result -->
+      <div class="content-grid">
+        <!-- Upload Panel -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-cloud-upload-alt"></i> Upload Audio</div>
+          </div>
+          <div class="card-body">
+            <div class="upload-area" id="upload-area">
+              <i class="fas fa-cloud-upload-alt"></i>
+              <h4>Drop your audio file here</h4>
+              <p>or click to browse</p>
+              <input type="file" id="audio-input" accept=".wav,audio/wav" onchange="handleFileSelect(this.files[0])">
+            </div>
+            <div id="audio-preview" class="hidden">
+              <div class="audio-preview">
+                <i class="fas fa-music"></i>
+                <div class="audio-preview-info">
+                  <div class="audio-preview-name" id="preview-name"></div>
+                  <div class="audio-preview-size" id="preview-size"></div>
+                  <audio controls id="preview-player"></audio>
+                </div>
+              </div>
+              <!-- Waveform Chart Container -->
+              <div id="waveform-container" style="margin-top:16px; position:relative; height:120px;">
+                <canvas id="waveform-chart"></canvas>
+                <div id="waveform-error" class="hidden"
+                  style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:14px;">
+                  Waveform unavailable</div>
+              </div>
+            </div>
+            <p class="file-support-text"><i class="fas fa-info-circle"></i> Supports: .wav, .ogg, .webm</p>
+            <button class="btn btn-primary btn-lg" style="width:100%;margin-top:16px" id="analyze-btn"
+              onclick="analyzeAudio()" disabled>
+              <i class="fas fa-microscope"></i> Analyze Audio
+            </button>
+          </div>
+        </div>
+
+        <!-- Result Panel -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-poll"></i> Analysis Result</div>
+          </div>
+          <div class="card-body">
+            <!-- Default State -->
+            <div id="result-default" class="result-panel result-placeholder">
+              <i class="fas fa-chart-bar"></i>
+              <p>Upload an audio file to see the analysis result</p>
+            </div>
+
+            <!-- Result State (hidden initially) -->
+            <div id="result-content" class="hidden">
+              <div class="result-panel">
+                <div class="verdict-badge" id="verdict-badge">
+                  <i class="fas fa-circle"></i> <span id="verdict-text">-</span>
+                </div>
+                <div class="confidence-value" id="confidence-value">0%</div>
+                <div class="confidence-label">Confidence Score</div>
+
+                <div class="progress-container">
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="confidence-bar" style="width:0%"></div>
+                  </div>
+                </div>
+
+                <a href="#" class="btn btn-primary" id="report-btn" target="_blank" download>
+                  <i class="fas fa-file-pdf"></i> Download Report
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: Visualizations -->
+      <div class="viz-row">
+        <div class="card viz-card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-wave-square"></i> MFCC Visualization</div>
+          </div>
+          <div class="card-body">
+            <div id="mfcc-default" class="viz-placeholder">
+              <i class="fas fa-image"></i>
+              <p>MFCC visualization will appear here</p>
+            </div>
+            <img id="mfcc-img" class="viz-image hidden" alt="MFCC Visualization">
+          </div>
+        </div>
+        <div class="card viz-card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-music"></i> Spectrogram</div>
+          </div>
+          <div class="card-body">
+            <div id="mel-default" class="viz-placeholder">
+              <i class="fas fa-image"></i>
+              <p>Spectrogram will appear here</p>
+            </div>
+            <img id="mel-img" class="viz-image hidden" alt="Spectrogram">
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Loader Overlay -->
+  <div id="loader" class="loader-overlay hidden">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">Analyzing Audio...</div>
+    <div class="loader-subtext">This may take a few moments</div>
+  </div>
+
+  <script src="/template/js/app.js?v=2"></script>
+  <script>
+    // Global variables to hold current analysis data
+    var currentFile = null;
+    var currentResultData = null;
+    var waveformChartInstance = null;
+
+    // Auth guard
+    if (!authGuard()) {
+      throw new Error('Authentication required');
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function () {
+      renderSidebarUser();
+      setActiveNav('dashboard');
+      loadStats();
+      loadLatestResult();
+      setupDragDrop();
+    });
+
+    // ============================================================
+    // LOAD LATEST RESULT FROM BACKEND ON PAGE LOAD
+    // ============================================================
+    async function loadLatestResult() {
+      try {
+        var response = await apiFetch('/dashboard');
+        if (!response) return;
+        var data = await response.json();
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        // Get most recent entry
+        var latest = data[0];
+
+        // Display result panel
+        document.getElementById('result-default').classList.add('hidden');
+        document.getElementById('result-content').classList.remove('hidden');
+
+        // Show verdict
+        var verdictText = latest.result || 'UNKNOWN';
+        var isFake = verdictText.toUpperCase().includes('FAKE');
+        var verdictBadge = document.getElementById('verdict-badge');
+        verdictBadge.className = 'verdict-badge ' + (isFake ? 'fake' : 'real');
+        document.getElementById('verdict-text').textContent = verdictText;
+
+        // Show confidence
+        var confidenceStr = formatConfidence(latest.confidence);
+        document.getElementById('confidence-value').textContent = confidenceStr;
+
+        // Update progress bar
+        var confNum = parseFloat(confidenceStr.replace('%', ''));
+        var bar = document.getElementById('confidence-bar');
+        bar.className = 'progress-bar-fill ' + (isFake ? 'fake' : 'real');
+        bar.style.width = confNum + '%';
+
+        // Set report link
+        var reportBtn = document.getElementById('report-btn');
+        if (latest.report_path) {
+          reportBtn.href = BASE_URL + '/' + latest.report_path;
+          reportBtn.classList.remove('hidden');
+        } else {
+          reportBtn.classList.add('hidden');
+        }
+
+        // Show visuals from backend
+        showVisualizations(latest.mfcc_path, latest.spectrogram_path);
+
+      } catch (e) {
+        console.error('Load latest result error:', e);
+      }
+    }
+
+    // Helper to display result visuals
+    function showVisualizations(mfccPath, melPath) {
+      function buildBackendUrl(path) {
+        if (!path) return '';
+        var sep = path.startsWith('/') ? '' : '/';
+        return BASE_URL + sep + path + '?t=' + Date.now();
+      }
+
+      // Show MFCC
+      var mfccImg = document.getElementById('mfcc-img');
+      if (mfccPath) {
+        mfccImg.src = buildBackendUrl(mfccPath);
+        setupImageRetry(mfccImg);
+      }
+      document.getElementById('mfcc-default').classList.add('hidden');
+      mfccImg.classList.remove('hidden');
+
+      // Show Spectrogram
+      var melImg = document.getElementById('mel-img');
+      if (melPath) {
+        melImg.src = buildBackendUrl(melPath);
+        setupImageRetry(melImg);
+      }
+      document.getElementById('mel-default').classList.add('hidden');
+      melImg.classList.remove('hidden');
+    }
+
+    // Load statistics from /dashboard endpoint
+    async function loadStats() {
+      try {
+        var response = await apiFetch('/dashboard');
+        if (!response) return;
+        var data = await response.json();
+        if (!Array.isArray(data)) return;
+
+        var total = data.length;
+        var realCount = 0;
+        var fakeCount = 0;
+        var totalConfidence = 0;
+
+        data.forEach(function (item) {
+          if (item.result && item.result.toUpperCase().includes('REAL')) {
+            realCount++;
+          } else if (item.result && item.result.toUpperCase().includes('FAKE')) {
+            fakeCount++;
+          }
+          var conf = parseFloat(item.confidence);
+          if (!isNaN(conf)) {
+            totalConfidence += conf;
+          }
+        });
+
+        var avgConfidence = total > 0 ? ((totalConfidence / total) * 100).toFixed(1) : '0';
+
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-real').textContent = realCount;
+        document.getElementById('stat-fake').textContent = fakeCount;
+        document.getElementById('stat-confidence').textContent = avgConfidence + '%';
+      } catch (e) {
+        console.error('Stats error:', e);
+      }
+    }
+
+    // Drag & Drop setup
+    function setupDragDrop() {
+      var uploadArea = document.getElementById('upload-area');
+
+      uploadArea.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+      });
+
+      uploadArea.addEventListener('dragleave', function () {
+        uploadArea.classList.remove('dragover');
+      });
+
+      uploadArea.addEventListener('drop', function (e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        var files = e.dataTransfer.files;
+        if (files.length > 0) {
+          handleFileSelect(files[0]);
+        }
+      });
+    }
+
+    // ============================================================
+    // REAL WAVEFORM VISUALIZATION (Chart.js Area Chart)
+    // ============================================================
+    async function drawWaveform(file) {
+      var canvas = document.getElementById('waveform-chart');
+      var errorDiv = document.getElementById('waveform-error');
+      var container = document.getElementById('waveform-container');
+
+      // Reset previous chart
+      if (waveformChartInstance) {
+        waveformChartInstance.destroy();
+        waveformChartInstance = null;
+      }
+
+      errorDiv.classList.add('hidden');
+      canvas.style.display = 'block';
+
+      try {
+        var objectUrl = URL.createObjectURL(file);
+        var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        var response = await fetch(objectUrl);
+        var arrayBuffer = await response.arrayBuffer();
+        var audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        var rawData = audioBuffer.getChannelData(0);
+
+        // Downsample to ~150 points using average sampling
+        var targetPoints = 150;
+        var blockSize = Math.floor(rawData.length / targetPoints);
+        var downsampled = [];
+        for (var i = 0; i < targetPoints; i++) {
+          var start = i * blockSize;
+          var end = start + blockSize;
+          var sum = 0;
+          for (var j = start; j < end && j < rawData.length; j++) {
+            sum += rawData[j];
+          }
+          downsampled.push(sum / blockSize);
+        }
+
+        // Create gradient fill
+        var ctx = canvas.getContext('2d');
+        var gradient = ctx.createLinearGradient(0, 0, 0, canvas.offsetHeight || 120);
+        gradient.addColorStop(0, 'rgba(56, 189, 248, 0.5)');   // sky-400
+        gradient.addColorStop(1, 'rgba(56, 189, 248, 0.05)');
+
+        var labels = [];
+        for (var k = 0; k < downsampled.length; k++) {
+          labels.push(k);
+        }
+
+        waveformChartInstance = new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: downsampled,
+              borderColor: '#38bdf8',
+              backgroundColor: gradient,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 0,
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: false }
+            },
+            scales: {
+              x: {
+                display: false
+              },
+              y: {
+                display: false,
+                min: -1,
+                max: 1
+              }
+            },
+            animation: {
+              duration: 0
+            }
+          }
+        });
+
+        // Cleanup object URL after a delay
+        setTimeout(function () {
+          URL.revokeObjectURL(objectUrl);
+        }, 5000);
+
+      } catch (err) {
+        console.error('Waveform error:', err);
+        canvas.style.display = 'none';
+        errorDiv.classList.remove('hidden');
+      }
+    }
+
+    // ============================================================
+    // IMAGE ERROR HANDLER WITH RETRY
+    // ============================================================
+    function setupImageRetry(imgElement) {
+      var retryCount = 0;
+      imgElement.onerror = function () {
+        if (retryCount < 1) {
+          retryCount++;
+          var src = imgElement.src.split('?')[0];
+          imgElement.src = src + '?t=' + Date.now();
+        } else {
+          // Show placeholder SVG after retry
+          imgElement.src = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27400%27 height=%27200%27%3E%3Crect fill=%27%231e293b%27 width=%27400%27 height=%27200%27/%3E%3Ctext fill=%27%2394a3b8%27 font-family=%27sans-serif%27 font-size=%2716%27 dy=%27.3em%27 text-anchor=%27middle%27 x=%27200%27 y=%27100%27%3EImage not available%3C/text%3E%3C/svg%3E';
+        }
+      };
+    }
+
+    // ============================================================
+    // CONVERT AUDIO TO WAV (for recorded .webm / .ogg files)
+    // ============================================================
+    async function convertToWav(file) {
+      var arrayBuffer = await file.arrayBuffer();
+      var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      var audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+      var offlineContext = new OfflineAudioContext(
+        audioBuffer.numberOfChannels,
+        audioBuffer.length,
+        audioBuffer.sampleRate
+      );
+
+      var source = offlineContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(offlineContext.destination);
+      source.start(0);
+
+      var renderedBuffer = await offlineContext.startRendering();
+      var wavBlob = bufferToWave(renderedBuffer, renderedBuffer.length);
+      return new File([wavBlob], 'recorded.wav', { type: 'audio/wav' });
+    }
+
+    // WAV encoder helper
+    function bufferToWave(abuffer, len) {
+      var numOfChan = abuffer.numberOfChannels;
+      var length = len * numOfChan * 2 + 44;
+      var buffer = new ArrayBuffer(length);
+      var view = new DataView(buffer);
+      var channels = [];
+      var i;
+      var sample;
+      var offset = 0;
+      var pos = 0;
+
+      setUint32(0x46464952);
+      setUint32(length - 8);
+      setUint32(0x45564157);
+
+      setUint32(0x20746d66);
+      setUint32(16);
+      setUint16(1);
+      setUint16(numOfChan);
+      setUint32(abuffer.sampleRate);
+      setUint32(abuffer.sampleRate * 2 * numOfChan);
+      setUint16(numOfChan * 2);
+      setUint16(16);
+
+      setUint32(0x61746164);
+      setUint32(length - pos - 4);
+
+      for (i = 0; i < abuffer.numberOfChannels; i++) {
+        channels.push(abuffer.getChannelData(i));
+      }
+
+      while (pos < length) {
+        for (i = 0; i < numOfChan; i++) {
+          sample = Math.max(-1, Math.min(1, channels[i][offset]));
+          sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+          view.setInt16(pos, sample, true);
+          pos += 2;
+        }
+        offset++;
+      }
+
+      return new Blob([buffer], { type: 'audio/wav' });
+
+      function setUint16(data) {
+        view.setUint16(pos, data, true);
+        pos += 2;
+      }
+
+      function setUint32(data) {
+        view.setUint32(pos, data, true);
+        pos += 4;
+      }
+    }
+
+    function needsConversion(file) {
+      var name = file.name.toLowerCase();
+      var mime = (file.type || '').toLowerCase();
+      return name.endsWith('.webm') || name.endsWith('.ogg') || name.endsWith('.mp3') ||
+        mime === 'audio/webm' || mime === 'audio/ogg' || mime === 'audio/mpeg' || mime === 'audio/mp3';
+    }
+
+    // Handle file selection
+    async function handleFileSelect(file) {
+      if (!file) return;
+
+      var name = file.name.toLowerCase();
+      var mime = (file.type || '').toLowerCase();
+      var isWav = name.endsWith('.wav') || mime === 'audio/wav' || mime === 'audio/x-wav';
+
+      // Accept any audio MIME type or known audio extension
+      var isKnownAudio = mime.startsWith('audio/') ||
+        name.endsWith('.wav') || name.endsWith('.webm') ||
+        name.endsWith('.ogg') || name.endsWith('.mp3') ||
+        name.endsWith('.mpeg') || name.endsWith('.m4a') ||
+        name.endsWith('.aac') || name.endsWith('.flac');
+
+      if (!isKnownAudio) {
+        showToast('Unsupported audio format. Please use .wav, .mp3, .ogg, or .webm', 'error');
+        return;
+      }
+
+      // Convert all non-WAV audio to WAV using Web Audio API
+      if (!isWav) {
+        try {
+          showToast('Converting audio to WAV...', 'info');
+          file = await convertToWav(file);
+        } catch (err) {
+          console.error('Conversion error:', err);
+          showToast('Audio conversion failed. Please try a different file.', 'error');
+          return;
+        }
+      }
+
+      currentFile = file;
+
+      document.getElementById('preview-name').textContent = file.name;
+      document.getElementById('preview-size').textContent = formatBytes(file.size);
+
+      var player = document.getElementById('preview-player');
+      var objectUrl = URL.createObjectURL(file);
+      player.src = objectUrl;
+
+      document.getElementById('audio-preview').classList.remove('hidden');
+      document.getElementById('analyze-btn').disabled = false;
+
+      resetResultUI();
+      drawWaveform(file);
+    }
+
+    // Format bytes
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      var k = 1024;
+      var sizes = ['B', 'KB', 'MB', 'GB'];
+      var i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Reset result UI (only for new file upload, not after analysis)
+    function resetResultUI() {
+      document.getElementById('result-default').classList.remove('hidden');
+      document.getElementById('result-content').classList.add('hidden');
+      document.getElementById('mfcc-default').classList.remove('hidden');
+      document.getElementById('mfcc-img').classList.add('hidden');
+      document.getElementById('mel-default').classList.remove('hidden');
+      document.getElementById('mel-img').classList.add('hidden');
+    }
+
+    // Analyze audio
+    async function analyzeAudio() {
+      if (!currentFile) {
+        showToast('Please select an audio file first', 'error');
+        return;
+      }
+
+      var btn = document.getElementById('analyze-btn');
+      btn.disabled = true;
+
+      // Show loader
+      document.getElementById('loader').classList.remove('hidden');
+
+      var formData = new FormData();
+      formData.append('file', currentFile);
+
+      try {
+        var response = await apiFetch('/predict', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response) {
+          throw new Error('No response from server');
+        }
+
+        var data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || 'Analysis failed');
+        }
+
+        // Store result data
+        currentResultData = data;
+
+        // ============================================================
+        // CRITICAL FIX: Update UI immediately without reset/reload
+        // ============================================================
+
+        // Hide loader
+        document.getElementById('loader').classList.add('hidden');
+
+        // DO NOT reset UI
+        // DO NOT reload page
+        // DO NOT call /history
+        // Show result content immediately
+        document.getElementById('result-default').classList.add('hidden');
+        document.getElementById('result-content').classList.remove('hidden');
+
+        // Show verdict
+        var verdictText = data.verdict || 'UNKNOWN';
+        var isFake = verdictText.toUpperCase().includes('FAKE');
+        var verdictBadge = document.getElementById('verdict-badge');
+        verdictBadge.className = 'verdict-badge ' + (isFake ? 'fake' : 'real');
+        document.getElementById('verdict-text').textContent = verdictText;
+
+        // Show confidence
+        var confidenceStr = data.confidence || '0%';
+        document.getElementById('confidence-value').textContent = confidenceStr;
+
+        // Update progress bar
+        var confNum = parseFloat(confidenceStr.replace('%', ''));
+        var bar = document.getElementById('confidence-bar');
+        bar.className = 'progress-bar-fill ' + (isFake ? 'fake' : 'real');
+        bar.style.width = confNum + '%';
+
+        // Set report link using <a> tag directly
+        var reportBtn = document.getElementById('report-btn');
+        if (data.report) {
+          reportBtn.href = BASE_URL + data.report;
+          reportBtn.classList.remove('hidden');
+        } else {
+          reportBtn.classList.add('hidden');
+        }
+
+        // ============================================================
+        // SHOW VISUALIZATIONS FROM BACKEND RESPONSE
+        // ============================================================
+
+        // Extract base filename without extension for fallback
+        var filenameBase = currentFile.name.replace(/\.[^/.]+$/, '');
+
+        // Use fallback paths if backend doesn't return them
+        var mfccPath = data.mfcc_path || 'outputs/' + filenameBase + '_mfcc.png';
+        var melPath = data.spectrogram_path || 'outputs/' + filenameBase + '_mel.png';
+
+        showVisualizations(mfccPath, melPath);
+
+        // Reload stats (safe, does not reset UI)
+        loadStats();
+
+        showToast('Analysis complete!', 'success');
+
+      } catch (error) {
+        document.getElementById('loader').classList.add('hidden');
+        showToast(error.message || 'Analysis failed', 'error');
+        console.error('Analysis error:', error);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+
+</html>

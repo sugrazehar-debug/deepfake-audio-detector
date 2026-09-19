@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepFake Audio Detector - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/template/css/style.css">
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:24px">
+      <i class="fas fa-shield-alt" style="font-size:40px;color:var(--primary-light);margin-bottom:12px"></i>
+      <h1>DeepFake Audio Detector</h1>
+      <p class="subtitle">AI-Powered Deepfake Audio Detection</p>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="login-tab" onclick="switchTab('login')">Login</button>
+      <button class="auth-tab" id="register-tab" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="login-form">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" class="form-input" id="login-username" placeholder="Enter your username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="login-password" placeholder="Enter your password">
+      </div>
+      <button class="btn btn-primary btn-lg" style="width:100%" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Login</button>
+    </div>
+
+    <!-- Register Form -->
+    <div id="register-form" class="hidden">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" class="form-input" id="reg-username" placeholder="Choose a username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="reg-password" placeholder="Choose a password (min 6 chars)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <input type="password" class="form-input" id="reg-confirm" placeholder="Confirm your password">
+      </div>
+      <button class="btn btn-success btn-lg" style="width:100%" onclick="doRegister()"><i class="fas fa-user-plus"></i> Create Account</button>
+    </div>
+
+  <script src="/template/js/app.js"></script>
+  <script>
+    function switchTab(tab) {
+      document.getElementById('login-tab').classList.toggle('active', tab === 'login');
+      document.getElementById('register-tab').classList.toggle('active', tab === 'register');
+      document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+    }
+
+    async function doLogin() {
+      var username = document.getElementById('login-username').value.trim();
+      var password = document.getElementById('login-password').value.trim();
+      if (!username || !password) {
+        showToast('Please enter username and password', 'error');
+        return;
+      }
+      try {
+        var response = await fetch(BASE_URL + '/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: username, password: password })
+        });
+        var data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || 'Login failed');
+        }
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.username || username);
+        showToast('Login successful! Redirecting...', 'success');
+        setTimeout(function() {
+          window.location.href = '/template/dashboard.html';
+        }, 1000);
+      } catch (e) {
+        showToast(e.message || 'Login failed', 'error');
+      }
+    }
+
+    async function doRegister() {
+      var username = document.getElementById('reg-username').value.trim();
+      var password = document.getElementById('reg-password').value.trim();
+      var confirm = document.getElementById('reg-confirm').value.trim();
+      if (!username || !password) {
+        showToast('Please enter username and password', 'error');
+        return;
+      }
+      if (password.length < 6) {
+        showToast('Password must be at least 6 characters', 'error');
+        return;
+      }
+      if (password !== confirm) {
+        showToast('Passwords do not match', 'error');
+        return;
+      }
+      try {
+        var response = await fetch(BASE_URL + '/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: username, password: password })
+        });
+        var data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || 'Registration failed');
+        }
+        showToast('Registration successful! Please login.', 'success');
+        switchTab('login');
+        document.getElementById('login-username').value = username;
+      } catch (e) {
+        showToast(e.message || 'Registration failed', 'error');
+      }
+    }
+
+    document.getElementById('login-password').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') doLogin();
+    });
+    document.getElementById('reg-confirm').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') doRegister();
+    });
+
+    if (localStorage.getItem('token')) {
+      window.location.href = '/template/dashboard.html';
+    }
+  </script>
+</body>
+</html>

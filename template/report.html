@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report - DeepFake Audio Detector</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/template/css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <i class="fas fa-shield-alt"></i>
+          <span>DeepFake Audio Detector</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/template/dashboard.html" class="nav-item" data-page="dashboard">
+          <i class="fas fa-chart-pie"></i> Dashboard
+        </a>
+        <a href="/template/history.html" class="nav-item" data-page="history">
+          <i class="fas fa-history"></i> History
+        </a>
+        <a href="/template/report.html" class="nav-item active" data-page="report">
+          <i class="fas fa-file-alt"></i> Reports
+        </a>
+        <a href="/template/settings.html" class="nav-item" data-page="settings">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="sidebar-avatar">U</div>
+          <div>
+            <div class="user-name" id="sidebar-username">User</div>
+            <div class="user-role">Forensic Analyst</div>
+          </div>
+        </div>
+        <button class="btn btn-danger" style="width:100%" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h2><i class="fas fa-file-alt"></i> Analysis Report</h2>
+        <p>Detailed forensic analysis report</p>
+      </div>
+
+      <!-- Report Header -->
+      <div class="card">
+        <div class="card-body">
+          <div class="report-header">
+            <div>
+              <h3 id="report-audio-name" style="font-size:20px;margin-bottom:8px">
+                <i class="fas fa-music" style="color:var(--primary-light)"></i> <span>-</span>
+              </h3>
+            </div>
+            <div class="report-meta">
+              <div class="meta-item">
+                <span class="meta-label">Date</span>
+                <span class="meta-value" id="report-date">-</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Verdict</span>
+                <span class="meta-value" id="report-verdict">-</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Confidence</span>
+                <span class="meta-value" id="report-confidence">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px">
+            <a href="#" class="btn btn-primary" id="report-dl-btn" target="_blank" download>
+              <i class="fas fa-download"></i> Download PDF Report
+            </a>
+            <a href="/template/history.html" class="btn btn-secondary">
+              <i class="fas fa-arrow-left"></i> Back to History
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visualizations -->
+      <div class="report-visuals">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-wave-square"></i> MFCC Visualization</div>
+          </div>
+          <div class="card-body">
+            <img id="report-mfcc" class="viz-image" alt="MFCC" style="display:none" onerror="this.style.display='none';document.getElementById('mfcc-fallback').classList.remove('hidden')">
+            <div id="mfcc-fallback" class="viz-placeholder hidden">
+              <i class="fas fa-image"></i>
+              <p>MFCC visualization not available</p>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-music"></i> Mel-Frequency Spectrogram</div>
+          </div>
+          <div class="card-body">
+            <img id="report-spec" class="viz-image" alt="Spectrogram" style="display:none" onerror="this.style.display='none';document.getElementById('spec-fallback').classList.remove('hidden')">
+            <div id="spec-fallback" class="viz-placeholder hidden">
+              <i class="fas fa-image"></i>
+              <p>Spectrogram not available</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explanation -->
+      <div class="report-explanation">
+        <h3><i class="fas fa-brain"></i> Analysis Methodology</h3>
+        <p>
+          This forensic audio analysis employs a deep learning architecture combining <strong>Convolutional Neural Networks (CNN)</strong> 
+          with <strong>Bidirectional Long Short-Term Memory (BiLSTM)</strong> networks to detect manipulated audio content.
+        </p>
+        <p><strong>CNN Feature Extraction:</strong></p>
+        <ul>
+          <li>Mel-Frequency Cepstral Coefficients (MFCCs) are extracted from the audio signal</li>
+          <li>CNN layers capture local spectral patterns and texture anomalies</li>
+          <li>Multiple convolutional filters detect artifacts introduced by deepfake generation</li>
+        </ul>
+        <p><strong>BiLSTM Temporal Analysis:</strong></p>
+        <ul>
+          <li>Bidirectional LSTM processes temporal sequences in both forward and backward directions</li>
+          <li>Captures long-range dependencies and temporal inconsistencies in audio</li>
+          <li>Identifies unnatural transitions between phonemes and speech segments</li>
+        </ul>
+        <p><strong>Confidence Score:</strong></p>
+        <ul>
+          <li>The model outputs a probability indicating the likelihood of manipulation</li>
+          <li>Scores above 50% suggest potential deepfake content</li>
+          <li>Higher confidence indicates stronger evidence of manipulation</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+
+  <script src="/template/js/app.js"></script>
+  <script>
+    if (!authGuard()) {
+      throw new Error('Authentication required');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      renderSidebarUser();
+      setActiveNav('report');
+      loadReportFromParams();
+    });
+
+    function loadReportFromParams() {
+      var params = new URLSearchParams(window.location.search);
+
+      var audioName = params.get('audio') || 'Unknown Audio';
+      var result = params.get('result') || '-';
+      var confidence = params.get('confidence') || '0';
+      var date = params.get('date') || '-';
+      var mfccPath = params.get('mfcc') || '';
+      var specPath = params.get('spec') || '';
+      var reportPath = params.get('report') || '';
+
+      // Set audio name
+      document.getElementById('report-audio-name').querySelector('span').textContent = audioName;
+
+      // Set date
+      document.getElementById('report-date').textContent = formatDate(date);
+
+      // Set verdict
+      var isFake = result.toUpperCase().includes('FAKE');
+      var verdictEl = document.getElementById('report-verdict');
+      verdictEl.textContent = result;
+      verdictEl.style.color = isFake ? 'var(--danger)' : 'var(--success)';
+
+      // Set confidence
+      var confNum = parseFloat(confidence);
+      document.getElementById('report-confidence').textContent = isNaN(confNum) ? '0%' : (confNum * 100).toFixed(2) + '%';
+
+      // Set report download
+      var dlBtn = document.getElementById('report-dl-btn');
+      if (reportPath) {
+        dlBtn.href = BASE_URL + '/' + reportPath;
+      } else {
+        dlBtn.classList.add('hidden');
+      }
+
+      // Set MFCC image
+      var mfccImg = document.getElementById('report-mfcc');
+      if (mfccPath) {
+        mfccImg.src = BASE_URL + '/' + mfccPath;
+        mfccImg.style.display = 'block';
+        document.getElementById('mfcc-fallback').classList.add('hidden');
+      } else {
+        mfccImg.style.display = 'none';
+        document.getElementById('mfcc-fallback').classList.remove('hidden');
+      }
+
+      // Set Spectrogram image
+      var specImg = document.getElementById('report-spec');
+      if (specPath) {
+        specImg.src = BASE_URL + '/' + specPath;
+        specImg.style.display = 'block';
+        document.getElementById('spec-fallback').classList.add('hidden');
+      } else {
+        specImg.style.display = 'none';
+        document.getElementById('spec-fallback').classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
+
