@@ -127,51 +127,50 @@ deepfake-audio-detector/
 │
 ├── model/
 │   └── deepfake_model.h5
+
 │
 ├── training/
 │   ├── model_training.ipynb
 │   └── test.ipynb
+
 │
 ├── template/
+
 │
 ├── output/
+
 │
 ├── reports/
+
 │
 ├── project demo/
 │   └── demo-video.mp4
+
 │
 ├── uploads/
+
 │
 ├── main.py
-├── .gitignore
-└── README.md
-```
 
-> User-generated uploads, virtual environments, and local database files are excluded from version control through `.gitignore`.
+├── .gitignore
+
+└── README.md
+
 
 
 ## 📊 Model Evaluation
 
 The trained model was evaluated on **3,179 audio files**.
 
-| Metric | Result |
-|---|---:|
-| Accuracy | 99.34% |
-| Precision | 99.49% |
-| Recall | 98.73% |
-| Test Loss | 0.0278 |
+ Metric result
+ Accuracy - 99.34% 
+ Precision - 99.49% 
+ Recall - 98.73% 
+ Test Loss - 0.0278 
 
-### Confusion Matrix
 
-| | Predicted Real | Predicted Fake |
-|---|---:|---:|
-| Actual Real | 1991 | 6 |
-| Actual Fake | 15 | 1167 |
 
 These results represent the evaluation performed during the project development and testing phase.
-
----
 
 ## 🔐 Security
 
@@ -197,7 +196,6 @@ After analyzing an audio file, DeepGuard can generate a PDF report containing in
 - Analysis timestamp
 - Prediction details
 
----
 
 ## 💻 Running the Project
 
